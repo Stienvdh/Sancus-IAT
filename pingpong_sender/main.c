@@ -11,7 +11,9 @@ DECLARE_SM(iat, 0x1234);
 
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
+#define RUNS         		1000
 
+int counter = RUNS;
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
 volatile int last_time = 	0;
 
@@ -26,15 +28,18 @@ void SM_ENTRY(iat) iat_send()
 
 long time_to_sleep()
 {
-    return 2000;
+    return 7005;
 }
 
 void timer_callback(void)
 {
     timer_disable();
-    ican_send(&msp_ican, CAN_MSG_ID, msg, CAN_PAYLOAD_LEN, 1);
-
-    timer_irq(time_to_sleep());
+    if (counter > 0) 
+    {
+	timer_irq(time_to_sleep());
+        ican_send(&msp_ican, CAN_MSG_ID, msg, CAN_PAYLOAD_LEN, 0);
+	counter--;
+    }
 }
 
 int main()
@@ -54,6 +59,8 @@ int main()
     
     /* Arbitrary delay until start of message transmission */
     timer_irq(200);
+
+    while (1);
 }
 
 TIMER_ISR_ENTRY(timer_callback)
