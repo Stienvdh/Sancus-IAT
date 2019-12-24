@@ -16,7 +16,7 @@ DECLARE_TSC_TIMER(timer);
 
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
 volatile int last_time = 	0;
-uint64_t timings[RUNS] = {0x12, 0x34, 0x12, 0x34};
+uint64_t timings[RUNS];
 int counter = RUNS;
 
 // FPGA CAN interface
@@ -35,7 +35,7 @@ int main()
     uint8_t rec_msg[CAN_PAYLOAD_LEN] = {0x0};
     uint64_t temp;
     int len;
-    int i = 0;
+    int i = 0; 
 
     /* SETUP */
     msp430_io_init();
@@ -49,17 +49,16 @@ int main()
     sancus_enable(&iat);
     pr_info("Done");
 
+    TSC_TIMER_START(timer);
     while (counter > 0)
     {
-	counter--;
-	TSC_TIMER_START(timer);
 	ican_recv(&msp_ican, &rec_id, rec_msg,1);
 	TSC_TIMER_END(timer);
-	if (rec_id==CAN_MSG_ID)
-	{
-	    timings[counter] = timer_get_interval();
-        }
-	rec_id = 0x0;
+	timings[counter-1] = timer_get_interval();
+	TSC_TIMER_START(timer);
+	counter--;
+
+	// Do processing here
     } 
     
     while (i<RUNS)
