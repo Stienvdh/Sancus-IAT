@@ -13,11 +13,15 @@ DECLARE_SM(iat, 0x1234);
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
 #define RUNS         		1000
+#define DELTA                   1
+#define PERIOD                  20
 
 int counter = RUNS;
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
 volatile int last_time = 	0;
 uint64_t timings[RUNS];
+uint8_t covert_payload[8] = { 1, 0, 0, 1, 1, 0, 1, 0 };
+int payload_counter = 0;
 
 // FPGA CAN interface
 DECLARE_ICAN(msp_ican, 1, CAN_500_KHZ);
@@ -31,7 +35,25 @@ void SM_ENTRY(iat) iat_send()
 
 long time_to_sleep()
 {
-    return 135+(51*343);
+    int result = 0;
+
+    if (covert_payload[payload_counter] == 1)
+    {
+	result = PERIOD + DELTA;
+    }
+    else 
+    {
+	result = PERIOD - DELTA;
+    }
+
+    payload_counter++;
+
+    if (payload_counter >= 8) 
+    {
+	payload_counter = 0;
+    }
+
+    return 261 + (result*343);
 }
 
 void timer_callback(void)
@@ -41,8 +63,8 @@ void timer_callback(void)
     timer_disable();
     if (counter > 0) 
     {
-	timer_irq(time_to_sleep());
-        ican_send(&msp_ican, CAN_MSG_ID, msg, CAN_PAYLOAD_LEN, 1);
+	timer_irq(time_to_sleep()-20);
+        ican_send(&msp_ican, CAN_MSG_ID, msg, CAN_PAYLOAD_LEN, 0);
 	TSC_TIMER_END(timer);
 	counter--;
     	timings[counter] = timer_get_interval();

@@ -15,7 +15,7 @@ DECLARE_TSC_TIMER(timer);
 #define RUNS		        1000
 #define MESG_LEN                8
 #define PERIOD                  20
-#define DELTA                   1
+#define DELTA                   2
 
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
 volatile int last_time = 	0;
@@ -37,12 +37,12 @@ uint8_t decode(uint64_t timing)
 {
      int intervals;
      
-     intervals = (timing-261)/343;
-     if (intervals >= (PERIOD + DELTA))
+     intervals = (timing-135)/343;
+     if (intervals >= (PERIOD + DELTA/2))
      {
          return 0x1;
      }
-     if (intervals <= (PERIOD - DELTA))
+     if (intervals <= (PERIOD - DELTA/2))
      {
          return 0x0;
      }
@@ -92,12 +92,10 @@ int main()
 	if (goal_message[(RUNS-i-2)%8] == message[RUNS-i-1])
 	{
 	    success++;
-	    pr_info1("%u", timings[RUNS-i-1]);
  	    // pr_info("OK");
 	}
 	else 
 	{
-	    pr_info1("%u", timings[RUNS-i-1]);
             // pr_info("NOPE");
         }
     }
