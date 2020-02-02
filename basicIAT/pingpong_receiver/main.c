@@ -3,6 +3,7 @@
 #include <sancus/sm_support.h>
 #include <sancus_support/sm_io.h>
 #include <sancus_support/tsc.h>
+#include <sancus_support/fileio.h>
 #include "vulcan/drivers/mcp2515.c"
 
 /* ======== IAT SM ======== */
@@ -15,7 +16,7 @@ DECLARE_TSC_TIMER(timer);
 #define RUNS		        1000
 #define MESG_LEN                8
 #define PERIOD                  50
-#define DELTA                   3
+#define DELTA                   6
 
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
 volatile int last_time = 	0;
@@ -107,6 +108,11 @@ int main()
 	        // pr_info1("%u", message[RUNS-i-1]);
                 // pr_info("NOPE");
             }
+        }
+
+	if (fileio_available())
+	{
+            fileio_putc('c');
         }
 
         pr_info1("SUCCES RATE: %u ", success);

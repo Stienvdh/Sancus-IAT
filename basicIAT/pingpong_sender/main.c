@@ -13,7 +13,7 @@ DECLARE_SM(iat, 0x1234);
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
 #define RUNS         		1000
-#define DELTA                   3
+#define DELTA                   6
 #define PERIOD                  50
 #define ITERATIONS              10
 
