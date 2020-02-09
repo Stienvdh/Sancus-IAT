@@ -3,7 +3,6 @@
 #include <sancus/sm_support.h>
 #include <sancus_support/sm_io.h>
 #include <sancus_support/tsc.h>
-#include <sancus_support/fileio.h>
 #include "vulcan/drivers/mcp2515.c"
 
 /* ======== IAT SM ======== */
@@ -14,6 +13,7 @@ DECLARE_TSC_TIMER(timer);
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4 /* max 8 */
 #define RUNS		        1000
+#define ITERATIONS              10000
 #define MESG_LEN                8
 #define PERIOD                  50
 #define DELTA                   6
@@ -22,7 +22,10 @@ uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
 volatile int last_time = 	0;
 uint64_t timings[RUNS];
 uint8_t message[RUNS];
+uint64_t succesrates[ITERATIONS];
+uint64_t average;
 uint8_t goal_message[8] = { 1, 0, 0, 1, 1, 0, 1, 0 };
+int k = 0;
 
 // FPGA CAN interface
 DECLARE_ICAN(msp_ican, 1, CAN_50_KHZ);
@@ -57,8 +60,10 @@ int main()
     uint64_t temp;
     int len;
     int i = 0;
-    int success = 0; 
+    uint64_t success = 0; 
     int counter = RUNS;
+    uint64_t sum = 0;
+    uint64_t stdev;
 
     /* SETUP */
     msp430_io_init();
@@ -91,7 +96,7 @@ int main()
 	    }
         } 
 
-        /* Print timing info */
+        /* Processing of one iteration */
         i = RUNS;
 	success = 0;
         while (i>0)
@@ -110,12 +115,33 @@ int main()
             }
         }
 
-	if (fileio_available())
-	{
-            fileio_putc('c');
-        }
+	succesrates[k] = success;
+        k++;
 
-        pr_info1("SUCCES RATE: %u ", success);
-        pr_info1("of %u \n", RUNS);
+	/* Processing of all iterations */
+	if (k >= ITERATIONS) 
+	{
+	    i = 0;
+	    while (i<ITERATIONS)
+	    {
+	        sum = sum + succesrates[i];
+		i++;
+	    }
+	    average = sum/ITERATIONS;
+
+	    sum = 0;
+	    i = 0;
+	    while (i<ITERATIONS)
+            {
+                sum = sum + (succesrates[i]-average)*(succesrates[i]-average);
+                i++;
+            }
+            stdev = (sum*100)/ITERATIONS;
+
+	    pr_info1("average: %u", average);
+	    pr_info1("stdev (*100): %u", stdev);
+
+	    k = 0;
+	}
     }
 }
