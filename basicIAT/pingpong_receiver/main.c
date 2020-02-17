@@ -5,18 +5,15 @@
 #include <sancus_support/tsc.h>
 #include "vulcan/drivers/mcp2515.c"
 
-/* ======== IAT SM ======== */
-
-DECLARE_SM(iat, 0x1234);
 DECLARE_TSC_TIMER(timer);
 
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4 /* max 8 */
-#define RUNS		        1000
-#define ITERATIONS              10000
+#define RUNS		        100
+#define ITERATIONS              1000
 #define MESG_LEN                8
 #define PERIOD                  50
-#define DELTA                   6
+#define DELTA                   2
 
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
 volatile int last_time = 	0;
@@ -29,10 +26,6 @@ int k = 0;
 
 // FPGA CAN interface
 DECLARE_ICAN(msp_ican, 1, CAN_50_KHZ);
-
-void SM_ENTRY(iat) iat_send()
-{
-}
 
 /* ======== UNTRUSTED CONTEXT ======== */
 
@@ -74,7 +67,7 @@ int main()
     pr_info("Done");
 
     pr_info("Setting up Sancus module...");
-    sancus_enable(&iat);
+    // sancus_enable(&iat);
     pr_info("Done");
 
     while (1)
@@ -117,6 +110,11 @@ int main()
 
 	succesrates[k] = success;
         k++;
+
+	if (k%100 == 0) 
+	{
+	    pr_info1("runs done: %u", k);
+	}
 
 	/* Processing of all iterations */
 	if (k >= ITERATIONS) 

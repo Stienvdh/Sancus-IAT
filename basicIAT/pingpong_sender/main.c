@@ -12,10 +12,10 @@ DECLARE_SM(iat, 0x1234);
 
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
-#define RUNS         		1000
-#define DELTA                   6
+#define RUNS         		100
+#define DELTA                   2
 #define PERIOD                  50
-#define ITERATIONS              10
+#define ITERATIONS              1000
 
 int counter = RUNS;
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
