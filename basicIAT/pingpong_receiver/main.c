@@ -4,6 +4,7 @@
 #include <sancus_support/sm_io.h>
 #include <sancus_support/tsc.h>
 #include "vulcan/drivers/mcp2515.c"
+#include "../CAN_interrupt/CAN_interrupt.h"
 
 DECLARE_TSC_TIMER(timer);
 
@@ -31,18 +32,28 @@ DECLARE_ICAN(msp_ican, 1, CAN_50_KHZ);
 
 uint8_t decode(uint64_t timing)
 {
-     int intervals;
+    int intervals;
      
-     intervals = (timing-261)/343;
-     if (intervals >=  PERIOD + DELTA/2 )
-     {
-         return 0x1;
-     }
-     if (intervals <= PERIOD - DELTA/2 )
-     {
-         return 0x0;
-     }
-     return 0x2;
+    intervals = (timing-261)/343;
+    if (intervals >=  PERIOD + DELTA/2 )
+    {
+        return 0x1;
+    }
+    if (intervals <= PERIOD - DELTA/2 )
+    {
+        return 0x0;
+    }
+    return 0x2;
+}
+
+void can_callback(void)
+{
+    pr_info("INTERRUPT");
+    {
+	P1IFG = P1IFG & 0xfe;
+	can_w_reg(&msp_ican, MCP2515_CANINTF, 0x00, 1);
+        can_dump_regs(&msp_ican);
+    }
 }
 
 int main()
@@ -57,6 +68,7 @@ int main()
     int counter = RUNS;
     uint64_t sum = 0;
     uint64_t stdev;
+    uint8_t caninte = 0xff;
 
     /* SETUP */
     msp430_io_init();
@@ -66,24 +78,41 @@ int main()
     ican_init(&msp_ican);
     pr_info("Done");
 
+    pr_info("Enabling CAN interrupts...");
+    /* CAN module enable interrupt */
+    can_dump_regs(&msp_ican);
+    can_w_bit(&msp_ican, MCP2515_CANINTE,  MCP2515_CANINTE_RX0IE, 0x01);
+    can_w_bit(&msp_ican, MCP2515_CANINTE,  MCP2515_CANINTE_RX1IE, 0x02);
+    // can_w_bit(&msp_ican, MCP2515_CANINTE,  MCP2515_CANINTE_MERRE, 0x80);
+    pr_info("before IE");
+    P1IE = 0x1;
+    pr_info("after IE");
+    P1IES = 0x01;
+    P1IFG = 0x00;
+    pr_info("Done");
+    can_dump_regs(&msp_ican);
+
     pr_info("Setting up Sancus module...");
     // sancus_enable(&iat);
     pr_info("Done");
 
+    ican_send(&msp_ican, CAN_MSG_ID, msg, CAN_PAYLOAD_LEN, 0);
+    pr_info("Sent");
+
     while (1)
     {    
 	counter = RUNS; 
-        TSC_TIMER_START(timer);
+        // enable when using TSC_TIMER_START(timer);
         while (counter > 0)
         {
 	    ican_recv(&msp_ican, &rec_id, rec_msg,1);
+	    pr_info("received message");
 	    if (rec_id == CAN_MSG_ID)
 	    {
 	        TSC_TIMER_END(timer);
 	        timings[RUNS-counter] = timer_get_interval();
  	        TSC_TIMER_START(timer);
                 counter--;
-
 	        // Do processing here
 	        message[RUNS-counter-1] = decode(timings[RUNS-counter-1]);
 	    }
@@ -142,4 +171,10 @@ int main()
 	    k = 0;
 	}
     }
+
+    while (1)
+    {
+    }
 }
+
+CAN_ISR_ENTRY(can_callback);
