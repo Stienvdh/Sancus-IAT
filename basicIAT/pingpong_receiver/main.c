@@ -10,8 +10,8 @@ DECLARE_TSC_TIMER(timer);
 
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4 /* max 8 */
-#define RUNS		        100
-#define ITERATIONS              1000
+#define RUNS		        10
+#define ITERATIONS              10
 #define MESG_LEN                8
 #define PERIOD                  50
 #define DELTA                   2
@@ -24,6 +24,7 @@ uint64_t succesrates[ITERATIONS];
 uint64_t average;
 uint8_t goal_message[8] = { 1, 0, 0, 1, 1, 0, 1, 0 };
 int k = 0;
+int counter = RUNS;
 
 // FPGA CAN interface
 DECLARE_ICAN(msp_ican, 1, CAN_50_KHZ);
@@ -48,12 +49,13 @@ uint8_t decode(uint64_t timing)
 
 void can_callback(void)
 {
-    pr_info("INTERRUPT");
-    {
-	P1IFG = P1IFG & 0xfe;
-	can_w_reg(&msp_ican, MCP2515_CANINTF, 0x00, 1);
-        can_dump_regs(&msp_ican);
-    }
+    /* Store IAT */
+    TSC_TIMER_END(timer);
+    timings[RUNS-counter] = timer_get_interval();
+    TSC_TIMER_START(timer);
+    counter--;
+    P1IFG = P1IFG & 0xfe;
+    can_w_reg(&msp_ican, MCP2515_CANINTF, 0x00, 1);
 }
 
 int main()
@@ -65,7 +67,6 @@ int main()
     int len;
     int i = 0;
     uint64_t success = 0; 
-    int counter = RUNS;
     uint64_t sum = 0;
     uint64_t stdev;
     uint8_t caninte = 0xff;
@@ -80,45 +81,33 @@ int main()
 
     pr_info("Enabling CAN interrupts...");
     /* CAN module enable interrupt */
-    can_dump_regs(&msp_ican);
     can_w_bit(&msp_ican, MCP2515_CANINTE,  MCP2515_CANINTE_RX0IE, 0x01);
     can_w_bit(&msp_ican, MCP2515_CANINTE,  MCP2515_CANINTE_RX1IE, 0x02);
-    // can_w_bit(&msp_ican, MCP2515_CANINTE,  MCP2515_CANINTE_MERRE, 0x80);
-    pr_info("before IE");
-    P1IE = 0x1;
-    pr_info("after IE");
+    /* MSP P1.0 enable interrupt on negative edge */
+    P1IE = 0x01;
     P1IES = 0x01;
     P1IFG = 0x00;
     pr_info("Done");
-    can_dump_regs(&msp_ican);
 
-    pr_info("Setting up Sancus module...");
-    // sancus_enable(&iat);
-    pr_info("Done");
+    TSC_TIMER_START(timer);
 
-    ican_send(&msp_ican, CAN_MSG_ID, msg, CAN_PAYLOAD_LEN, 0);
-    pr_info("Sent");
-
-    while (1)
+    while (k <= ITERATIONS)
     {    
 	counter = RUNS; 
-        // enable when using TSC_TIMER_START(timer);
         while (counter > 0)
         {
 	    ican_recv(&msp_ican, &rec_id, rec_msg,1);
-	    pr_info("received message");
 	    if (rec_id == CAN_MSG_ID)
 	    {
-	        TSC_TIMER_END(timer);
-	        timings[RUNS-counter] = timer_get_interval();
- 	        TSC_TIMER_START(timer);
-                counter--;
-	        // Do processing here
+	        /* Decode IAT */ 
 	        message[RUNS-counter-1] = decode(timings[RUNS-counter-1]);
+		// pr_info1("time: %u", timings[RUNS-counter-1]);
 	    }
-        } 
+        }
 
-        /* Processing of one iteration */
+	/* PROCESSING */	
+
+        /* Processing of one iteration: count correct transmissions */
         i = RUNS;
 	success = 0;
         while (i>0)
@@ -127,25 +116,17 @@ int main()
 	    if (goal_message[(RUNS-i-2)%8] == message[RUNS-i-1])
 	    {
 	        success++;
-	        // pr_info1("%u", message[RUNS-i-1]);
- 	        // pr_info("OK");
-	    }
-	    else 
-	    {
-	        // pr_info1("%u", message[RUNS-i-1]);
-                // pr_info("NOPE");
             }
+	    pr_info1("time: %u", timings[RUNS-i-1]);
         }
 
-	succesrates[k] = success;
-        k++;
-
-	if (k%100 == 0) 
+	/* Bookkeeping */
+	// if (k%100 == 0) 
 	{
-	    pr_info1("runs done: %u", k);
+	   // pr_info1("runs done: %u", k);
 	}
 
-	/* Processing of all iterations */
+	/* Processing of all iterations: calculate average & stdev */
 	if (k >= ITERATIONS) 
 	{
 	    i = 0;

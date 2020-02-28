@@ -13,9 +13,9 @@ DECLARE_SM(iat, 0x1234);
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
 #define RUNS         		100
-#define DELTA                   2
-#define PERIOD                  50
-#define ITERATIONS              1000
+#define DELTA                   0
+#define PERIOD                  2000
+#define ITERATIONS              1
 
 int counter = RUNS;
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
@@ -55,7 +55,7 @@ long time_to_sleep()
 	payload_counter = 0;
     }
 
-    return 261 + (result*343);
+    return 20000;
 }
 
 void timer_callback(void)
@@ -66,19 +66,20 @@ void timer_callback(void)
     { 	    
         if (counter > 0) 
         {
-	    timer_irq(time_to_sleep()-20);
+	    timer_irq(21000);
             ican_send(&msp_ican, CAN_MSG_ID, msg, CAN_PAYLOAD_LEN, 0);
-	    TSC_TIMER_END(timer);
+	    // pr_info("sent");
+	    // TSC_TIMER_END(timer);
 	    counter--;
-    	    timings[counter] = timer_get_interval();
-  	    TSC_TIMER_START(timer);
+    	    // timings[counter] = timer_get_interval();
+  	    // TSC_TIMER_START(timer);
         }
 
         else 
         {
 	    while (i<RUNS)
 	    {
-	        pr_info1("%u ", timings[i]);
+	        // pr_info1("%u ", timings[i]);
 	        i++;
             }
 	    
