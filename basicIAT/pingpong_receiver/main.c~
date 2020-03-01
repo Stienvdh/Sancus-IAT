@@ -13,8 +13,8 @@ DECLARE_TSC_TIMER(timer);
 #define RUNS		        100
 #define ITERATIONS              1
 #define MESG_LEN                8
-uint64_t PERIOD = 10000;
-uint64_t DELTA = 1000;
+#define PERIOD                  50
+#define DELTA                   2
 
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
 volatile int last_time = 	0;
@@ -24,12 +24,9 @@ uint64_t succesrates[ITERATIONS];
 uint64_t average;
 uint8_t goal_message[8] = { 1, 0, 0, 1, 1, 0, 1, 0 };
 int k = 0;
-int counter = RUNS+1;
+int counter = RUNS;
 uint16_t rec_id = 0x0;
 uint8_t rec_msg[CAN_PAYLOAD_LEN] = {0x0};
-int available = 0;
-uint16_t int_counter = 0;
-uint64_t interval;
 
 // FPGA CAN interface
 DECLARE_ICAN(msp_ican, 1, CAN_50_KHZ);
@@ -38,31 +35,29 @@ DECLARE_ICAN(msp_ican, 1, CAN_50_KHZ);
 
 uint8_t decode(uint64_t timing)
 {
-    //pr_info1("input: %u", timing);
-    if (timing > PERIOD + DELTA/2 )
+    int intervals;
+     
+    intervals = (timing-261)/343;
+    if (intervals >=  PERIOD + DELTA/2 )
     {
-	//pr_info("output 1");
-        return 1;
+        return 0x1;
     }
-    if (timing < PERIOD - DELTA/2 )
+    if (intervals <= PERIOD - DELTA/2 )
     {
-	//pr_info("output 0");
-        return 0;
+        return 0x0;
     }
-    //pr_info("output 2");
-    return 2;
+    return 0x2;
 }
 
 void can_callback(void)
 {
     /* Store IAT */
     TSC_TIMER_END(timer);
-    timings[int_counter] = timer_get_interval();
+    timings[RUNS-counter] = timer_get_interval();
     TSC_TIMER_START(timer);
-    message[int_counter] = decode(timings[int_counter]);
-    int_counter = (int_counter+1)%RUNS;
-    /* Clear interrupt flag */
+    counter--;
     P1IFG = P1IFG & 0xfe;
+    can_w_reg(&msp_ican, MCP2515_CANINTF, 0x00, 1);
 }
 
 int main()
@@ -99,16 +94,15 @@ int main()
     while (k <= ITERATIONS)
     {    
 	counter = RUNS; 
-	int_counter = 0;
         while (counter > 0)
         {
-	    ican_recv(&msp_ican, &rec_id, rec_msg, 1);
-	    if (rec_id == CAN_MSG_ID)
-	    {
+	    ican_recv(&msp_ican, &rec_id, rec_msg,0);
+	    // if (rec_id == CAN_MSG_ID)
+	    // {
 	        /* Decode IAT */ 
-	        // message[RUNS-counter] = decode(timings[RUNS-counter]);
-		counter--;
-	    }
+	        // message[RUNS-counter-1] = decode(timings[RUNS-counter-1]);
+		// pr_info1("time: %u", timings[RUNS-counter-1]);
+	    // }
         }
 
 	/* PROCESSING */	
@@ -119,15 +113,18 @@ int main()
         while (i>0)
         {
 	    i--;
-	    if (goal_message[(RUNS-i-1)%8] == message[RUNS-i])
+	    if (goal_message[(RUNS-i-2)%8] == message[RUNS-i-1])
 	    {
 	        success++;
             }
-	 }
+	    pr_info1("time: %u", timings[RUNS-i-1]);
+        }
 
 	/* Bookkeeping */
-	succesrates[k] = success;
-	k++;
+	// if (k%100 == 0) 
+	{
+	   // pr_info1("runs done: %u", k);
+	}
 
 	/* Processing of all iterations: calculate average & stdev */
 	if (k >= ITERATIONS) 

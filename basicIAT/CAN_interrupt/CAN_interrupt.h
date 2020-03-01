@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #define CAN_IRQ_VECTOR    4
-#define ISR_STACK_SIZE (512)
+#define ISR_STACK_SIZE (4096)
 
 uint16_t __isr_stack[ISR_STACK_SIZE];
 extern void* __isr_sp;
