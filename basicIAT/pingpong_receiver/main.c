@@ -10,7 +10,7 @@ DECLARE_TSC_TIMER(timer);
 
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4 /* max 8 */
-#define RUNS		        100
+#define RUNS		        10
 #define ITERATIONS              1
 #define MESG_LEN                8
 uint64_t PERIOD = 10000;
@@ -30,6 +30,7 @@ uint8_t rec_msg[CAN_PAYLOAD_LEN] = {0x0};
 int available = 0;
 uint16_t int_counter = 0;
 uint64_t interval;
+uint8_t int_data[2];
 
 // FPGA CAN interface
 DECLARE_ICAN(msp_ican, 1, CAN_50_KHZ);
@@ -56,11 +57,16 @@ uint8_t decode(uint64_t timing)
 void can_callback(void)
 {
     /* Store IAT */
-    TSC_TIMER_END(timer);
-    timings[int_counter] = timer_get_interval();
-    TSC_TIMER_START(timer);
-    message[int_counter] = decode(timings[int_counter]);
-    int_counter = (int_counter+1)%RUNS;
+    can_r_reg(&msp_ican, MCP2515_RXB0SIDH, &int_data, 2);
+    rec_id = (int_data[0] << 3) | (int_data[1] >> 5);
+    if (rec_id == CAN_MSG_ID)
+    {	
+        TSC_TIMER_END(timer);
+        timings[int_counter] = timer_get_interval();
+        TSC_TIMER_START(timer);
+        message[int_counter] = decode(timings[int_counter]);
+        int_counter = (int_counter+1)%RUNS;
+    }
     /* Clear interrupt flag */
     P1IFG = P1IFG & 0xfe;
 }
@@ -123,6 +129,7 @@ int main()
 	    {
 	        success++;
             }
+	    pr_info2("timing: %u - code: %u\n", timings[RUNS-i], message[RUNS-i]);
 	 }
 
 	/* Bookkeeping */
