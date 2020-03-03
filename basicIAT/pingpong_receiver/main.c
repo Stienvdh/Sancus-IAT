@@ -10,7 +10,7 @@ DECLARE_TSC_TIMER(timer);
 
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4 /* max 8 */
-#define RUNS		        10
+#define RUNS		        100
 #define ITERATIONS              1
 #define MESG_LEN                8
 uint64_t PERIOD = 10000;
@@ -56,17 +56,13 @@ uint8_t decode(uint64_t timing)
 
 void can_callback(void)
 {
-    /* Store IAT */
-    can_r_reg(&msp_ican, MCP2515_RXB0SIDH, &int_data, 2);
-    rec_id = (int_data[0] << 3) | (int_data[1] >> 5);
-    if (rec_id == CAN_MSG_ID)
-    {	
-        TSC_TIMER_END(timer);
-        timings[int_counter] = timer_get_interval();
-        TSC_TIMER_START(timer);
-        message[int_counter] = decode(timings[int_counter]);
-        int_counter = (int_counter+1)%RUNS;
-    }
+    /* Store IAT */	
+    TSC_TIMER_END(timer);
+    timings[int_counter] = timer_get_interval();
+    TSC_TIMER_START(timer);
+    message[int_counter] = decode(timings[int_counter]);
+    int_counter = (int_counter+1)%RUNS;
+
     /* Clear interrupt flag */
     P1IFG = P1IFG & 0xfe;
 }
@@ -81,6 +77,13 @@ int main()
     uint64_t sum = 0;
     uint64_t stdev;
     uint8_t caninte = 0xff;
+    uint8_t data = 0x00;
+
+    // mask + filter 
+    uint8_t mask_h = 0xff;
+    uint8_t mask_l = 0xe0;
+    uint8_t filter_h = 0x04;
+    uint8_t filter_l = 0x00;
 
     /* SETUP */
     msp430_io_init();
@@ -88,6 +91,16 @@ int main()
     
     pr_info("Setting up CAN module...");
     ican_init(&msp_ican);
+
+    data = MCP2515_CANCTRL_REQOP_CONFIGURATION;
+    can_w_reg(&msp_ican, MCP2515_CANCTRL, &data, 1);
+    can_w_reg(&msp_ican, MCP2515_RXM0SIDH, &mask_h, 1);
+    can_w_reg(&msp_ican, MCP2515_RXM0SIDL, &mask_l, 1);
+    can_w_reg(&msp_ican, MCP2515_RXF0SIDH, &filter_h, 1);
+    can_w_reg(&msp_ican, MCP2515_RXF0SIDL, &filter_l, 1);
+    data = MCP2515_CANCTRL_REQOP_NORMAL;
+    can_w_reg(&msp_ican, MCP2515_CANCTRL, &data, 1);
+    
     pr_info("Done");
 
     pr_info("Enabling CAN interrupts...");
@@ -129,6 +142,7 @@ int main()
 	    {
 	        success++;
             }
+	    pr_info1("wanted: %u - ", goal_message[(RUNS-i-1)%8]);
 	    pr_info2("timing: %u - code: %u\n", timings[RUNS-i], message[RUNS-i]);
 	 }
 
