@@ -64,7 +64,7 @@ void can_callback(void)
     int_counter = (int_counter+1)%RUNS;
 
     /* Clear interrupt flag */
-    P1IFG = P1IFG & 0xfe;
+    P1IFG = P1IFG & 0xfc;
 }
 
 int main()
@@ -94,10 +94,27 @@ int main()
 
     data = MCP2515_CANCTRL_REQOP_CONFIGURATION;
     can_w_reg(&msp_ican, MCP2515_CANCTRL, &data, 1);
+
+    // Zero-initialize some registers to be sure
+    data = 0x0;
+    can_w_reg(&msp_ican, MCP2515_TXRTSCTRL, &data, 1);
+    can_w_reg(&msp_ican, MCP2515_BFPCTRL, &data, 1);
+
+    // Receive only valid messages with standard/extended identifiers
+    data = MCP2515_RXB0CTRL_MODE_RECV_STD_OR_EXT;
+    can_w_reg(&msp_ican, MCP2515_RXB0CTRL, &data, 1);
+    data = MCP2515_RXB1CTRL_MODE_RECV_STD_OR_EXT;
+    can_w_reg(&msp_ican, MCP2515_RXB1CTRL, &data, 1);
+
     can_w_reg(&msp_ican, MCP2515_RXM0SIDH, &mask_h, 1);
     can_w_reg(&msp_ican, MCP2515_RXM0SIDL, &mask_l, 1);
     can_w_reg(&msp_ican, MCP2515_RXF0SIDH, &filter_h, 1);
     can_w_reg(&msp_ican, MCP2515_RXF0SIDL, &filter_l, 1);
+    can_w_reg(&msp_ican, MCP2515_RXM1SIDH, &mask_h, 1);
+    can_w_reg(&msp_ican, MCP2515_RXM1SIDL, &mask_l, 1);
+    can_w_reg(&msp_ican, MCP2515_RXF2SIDH, &filter_h, 1);
+    can_w_reg(&msp_ican, MCP2515_RXF2SIDL, &filter_l, 1);
+
     data = MCP2515_CANCTRL_REQOP_NORMAL;
     can_w_reg(&msp_ican, MCP2515_CANCTRL, &data, 1);
     
@@ -128,6 +145,10 @@ int main()
 	        // message[RUNS-counter] = decode(timings[RUNS-counter]);
 		counter--;
 	    }
+	    else 
+	    {
+		pr_info("MISS");
+	    }
         }
 
 	/* PROCESSING */	
@@ -142,9 +163,10 @@ int main()
 	    {
 	        success++;
             }
-	    pr_info1("wanted: %u - ", goal_message[(RUNS-i-1)%8]);
-	    pr_info2("timing: %u - code: %u\n", timings[RUNS-i], message[RUNS-i]);
-	 }
+	    //pr_info1("wanted: %u - ", goal_message[(RUNS-i-1)%8]);
+	    //pr_info2("timing: %u - code: %u\n", timings[RUNS-i], message[RUNS-i]);
+	    //pr_info1("i = %u\n", i);
+	}
 
 	/* Bookkeeping */
 	succesrates[k] = success;
