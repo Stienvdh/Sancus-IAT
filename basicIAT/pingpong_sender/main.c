@@ -29,12 +29,6 @@ int iterations = 0;
 DECLARE_ICAN(msp_ican, 1, CAN_50_KHZ);
 DECLARE_TSC_TIMER(timer);
 
-void SM_ENTRY(iat) iat_send()
-{
-}
-
-/* ======== UNTRUSTED CONTEXT ======== */
-
 long time_to_sleep()
 {
     int result = 0;
@@ -62,32 +56,45 @@ void timer_callback(void)
 {
     int i = 0;
     timer_disable();
+
+    /*************************************************/
+    /* RUN ONE ITERATION */
+    /*************************************************/
+    
     if (iterations < ITERATIONS)
     { 	    
         if (counter > 0) 
         {
+	    // Timer management
 	    timer_irq(time_to_sleep());
             ican_send(&msp_ican, CAN_MSG_ID, msg, CAN_PAYLOAD_LEN, 0);
-	    // pr_info("sent");
 	    TSC_TIMER_END(timer);
+
+	    // Bookkeeping
 	    counter--;
     	    timings[counter] = timer_get_interval();
   	    TSC_TIMER_START(timer);
         }
 
+    /*************************************************/
+    /* SET UP NEXT ITERATION */
+    /*************************************************/
         else 
         {
+	    // For computational latency measurements
 	    while (i<RUNS)
 	    {
 	        pr_info1("ITT: %u \n", timings[i]);
 	        i++;
             }
 	    
-	    // Initialise next iteration
+	    // Initialisation next iteration
             iterations++;
             counter = RUNS;
             payload_counter = 0;
 	    i = 0;
+
+	    // Arbitrary delay until start next iteration of transmissions
             timer_irq(20000);
         }
     }
@@ -96,7 +103,10 @@ void timer_callback(void)
 
 int main()
 {
-    /* SETUP */
+    /*************************************************/
+    /* HARDWARE SETUP */
+    /*************************************************/
+
     msp430_io_init();
     timer_init();
     asm("eint\n\t");
@@ -108,8 +118,12 @@ int main()
     pr_info("Setting up Sancus module...");
     sancus_enable(&iat);
     pr_info("Done");
+
+    /*************************************************/
+    /* IAT CHANNEL SETUP */
+    /*************************************************/
     
-    /* Arbitrary delay until start of message transmission */
+    // Arbitrary delay until start of message transmission
     timer_irq(200);
     TSC_TIMER_START(timer);
 
