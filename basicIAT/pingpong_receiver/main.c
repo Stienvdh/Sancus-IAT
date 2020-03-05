@@ -13,7 +13,7 @@ DECLARE_TSC_TIMER(timer);
 #define ITERATIONS              1000
 #define MESG_LEN                8
 #define PERIOD                  50
-#define DELTA                   2
+#define DELTA                   10
 
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
 volatile int last_time = 	0;

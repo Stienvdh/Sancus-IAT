@@ -13,7 +13,7 @@ DECLARE_SM(iat, 0x1234);
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
 #define RUNS         		100
-#define DELTA                   2
+#define DELTA                   9
 #define PERIOD                  50
 #define ITERATIONS              1000
 
@@ -78,12 +78,12 @@ void timer_callback(void)
         {
 	    while (i<RUNS)
 	    {
-	        pr_info1("%u ", timings[i]);
 	        i++;
             }
 	    
 	    // Initialise next iteration
             iterations++;
+	    pr_info1("%u", iterations);
             counter = RUNS;
             payload_counter = 0;
 	    i = 0;
