@@ -32,7 +32,7 @@ uint8_t rec_msg[CAN_PAYLOAD_LEN] = {0x0};
 uint16_t int_counter = 0;
 
 // FPGA CAN interface
-DECLARE_ICAN(msp_ican, 1, CAN_50_KHZ);
+DECLARE_ICAN(msp_ican, 1, CAN_500_KHZ);
 
 uint8_t decode(uint64_t timing)
 {
@@ -186,6 +186,7 @@ int main()
 	    {
 	        success++;
             }
+	    pr_info2("time: %u - decode: %u\n", timings[RUNS-i], message[RUNS-i]);
 	}
 
 	// bookkeeping

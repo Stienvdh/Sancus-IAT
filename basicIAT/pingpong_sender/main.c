@@ -6,10 +6,6 @@
 #include <sancus_support/tsc.h>
 #include "vulcan/drivers/mcp2515.c"
 
-/* ======== IAT SM ======== */
-
-DECLARE_SM(iat, 0x1234);
-
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
 #define RUNS         		100
@@ -26,10 +22,10 @@ int payload_counter = 0;
 int iterations = 0;
 
 // FPGA CAN interface
-DECLARE_ICAN(msp_ican, 1, CAN_50_KHZ);
+DECLARE_ICAN(msp_ican, 1, CAN_500_KHZ);
 DECLARE_TSC_TIMER(timer);
 
-long time_to_sleep()
+int time_to_sleep()
 {
     int result = 0;
 
@@ -42,12 +38,9 @@ long time_to_sleep()
 	result = PERIOD - DELTA;
     }
 
-    payload_counter++;
-
-    if (payload_counter >= 8) 
-    {
-	payload_counter = 0;
-    }
+    payload_counter = (payload_counter+1)%8;
+    
+    // pr_info1("sleep: %u\n", result);
 
     return result;
 }
@@ -95,7 +88,8 @@ void timer_callback(void)
 	    i = 0;
 
 	    // Arbitrary delay until start next iteration of transmissions
-            timer_irq(20000);
+            timer_irq(2000);
+	    TSC_TIMER_START(timer);
         }
     }
 }
@@ -116,7 +110,7 @@ int main()
     pr_info("Done");
 
     pr_info("Setting up Sancus module...");
-    sancus_enable(&iat);
+    // sancus_enable(&iat);
     pr_info("Done");
 
     /*************************************************/
@@ -124,7 +118,7 @@ int main()
     /*************************************************/
     
     // Arbitrary delay until start of message transmission
-    timer_irq(200);
+    timer_irq(2000);
     TSC_TIMER_START(timer);
 
     while (1);
