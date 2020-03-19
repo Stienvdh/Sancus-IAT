@@ -9,9 +9,9 @@
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
 #define RUNS         		400
-#define DELTA                   1000
+#define DELTA                   300
 #define PERIOD                  10000
-#define ITERATIONS              1
+#define ITERATIONS              10000
 
 int counter = RUNS;
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
@@ -86,7 +86,7 @@ void timer_callback(void)
 	    i = 0;
 
 	    // Arbitrary delay until start next iteration of transmissions
-            //pr_info1("iteration: %u", iterations);
+            pr_info1("iteration: %u", iterations);
 	    timer_irq(20000);
 	    TSC_TIMER_START(timer);
         }

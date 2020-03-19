@@ -11,12 +11,12 @@ DECLARE_TSC_TIMER(timer);
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4 /* max 8 */
 #define RUNS		        400
-#define ITERATIONS              1
+#define ITERATIONS              100
 #define MESG_LEN                8
 
 /* IAT CHANNEL VARIABLES */
 uint64_t PERIOD = 10000;
-uint64_t DELTA = 1000;
+uint64_t DELTA = 300;
 
 /* BOOKKEEPING VARIABLES */
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
@@ -187,11 +187,10 @@ int main()
         while (i>0)
         {
 	    i--;
-	    index = (index+1)%8;
 	    if (goal_message[(RUNS-i-1)%8] == message[RUNS-i])
 	    {
 		mess_success++;
-		//if (mess_success >= 8 && index == 0)
+		if (mess_success >= 8 && index == 7)
 		{
                     success++;
 		    mess_success = 0;
@@ -201,24 +200,18 @@ int main()
 	    {
                 mess_success = 0;
             }
+	    index = (index+1)%8;
+	    //pr_info2("timing: %u - code: %u", timings[RUNS-i], message[RUNS-i]);
 	}
 
 	// bookkeeping
-	succesrates[k] += success;
+	succesrates[k] = succesrates[k] + success + 1 ;
 	k++;
 
 	/* Processing of ALL iterations */
 
 	if (k >= ITERATIONS) 
 	{
-	    // Average
-	    i = 0;
-	    sum = 0;
-	    while (i<ITERATIONS)
-	    {
-	        sum = sum + succesrates[i];
-		i++;
-	    }
 	    cum_count++;
 	    k = 0;
 	}
@@ -239,6 +232,7 @@ int main()
 	    i = 0;
 	    while (i<ITERATIONS)
             {
+		pr_info1("rate: %u", succesrates[i]);
                 sum = sum + (succesrates[i]-average)*(succesrates[i]-average);
                 i++;
             }
