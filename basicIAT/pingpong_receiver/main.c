@@ -10,7 +10,7 @@ DECLARE_TSC_TIMER(timer);
 
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4 /* max 8 */
-#define RUNS		        100
+#define RUNS		        400
 #define ITERATIONS              1
 #define MESG_LEN                8
 
@@ -22,7 +22,7 @@ uint64_t DELTA = 1000;
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
 uint64_t timings[RUNS];
 uint8_t message[RUNS];
-uint64_t succesrates[ITERATIONS];
+uint16_t succesrates[ITERATIONS];
 uint64_t average;
 uint8_t goal_message[8] = { 1, 0, 0, 1, 1, 0, 1, 0 };
 int k = 0; /* Amount of iterations done */
@@ -30,6 +30,7 @@ int counter = RUNS+1; /* Amount of runs within iteration to do */
 uint16_t rec_id = 0x0;
 uint8_t rec_msg[CAN_PAYLOAD_LEN] = {0x0};
 uint16_t int_counter = 0;
+uint8_t cum_count = 0;
 
 // FPGA CAN interface
 DECLARE_ICAN(msp_ican, 1, CAN_500_KHZ);
@@ -75,6 +76,8 @@ int main()
     uint64_t stdev;
     uint8_t caninte = 0xff;
     uint8_t data = 0x00;
+    uint8_t mess_success;
+    uint8_t index;
 
     // mask + filter 
     uint8_t mask_h = 0xff;
@@ -179,18 +182,29 @@ int main()
 	// count correct transmissions
         i = RUNS;
 	success = 0;
+	mess_success = 0;
+	index = 0;
         while (i>0)
         {
 	    i--;
+	    index = (index+1)%8;
 	    if (goal_message[(RUNS-i-1)%8] == message[RUNS-i])
 	    {
-	        success++;
+		mess_success++;
+		//if (mess_success >= 8 && index == 0)
+		{
+                    success++;
+		    mess_success = 0;
+            	}
             }
-	    pr_info2("time: %u - decode: %u\n", timings[RUNS-i], message[RUNS-i]);
+	    else 
+	    {
+                mess_success = 0;
+            }
 	}
 
 	// bookkeeping
-	succesrates[k] = success;
+	succesrates[k] += success;
 	k++;
 
 	/* Processing of ALL iterations */
@@ -199,12 +213,26 @@ int main()
 	{
 	    // Average
 	    i = 0;
+	    sum = 0;
 	    while (i<ITERATIONS)
 	    {
 	        sum = sum + succesrates[i];
 		i++;
 	    }
-	    average = sum/ITERATIONS;
+	    cum_count++;
+	    k = 0;
+	}
+
+	if (cum_count >= ITERATIONS)
+        {
+	    sum = 0;
+	    i = 0;
+            while (i<ITERATIONS)
+            {
+                sum = sum + succesrates[i];
+                i++;
+            }
+            average = sum/(ITERATIONS);
 
 	    // Standard deviation
 	    sum = 0;
@@ -221,6 +249,7 @@ int main()
 	    pr_info1("stdev (*100): %u", stdev);
 
 	    k = 0;
+	    cum_count = 0;
 	}
     }
 

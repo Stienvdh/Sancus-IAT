@@ -8,7 +8,7 @@
 
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
-#define RUNS         		100
+#define RUNS         		400
 #define DELTA                   1000
 #define PERIOD                  10000
 #define ITERATIONS              1
@@ -39,8 +39,6 @@ int time_to_sleep()
     }
 
     payload_counter = (payload_counter+1)%8;
-    
-    // pr_info1("sleep: %u\n", result);
 
     return result;
 }
@@ -59,7 +57,7 @@ void timer_callback(void)
         if (counter > 0) 
         {
 	    // Timer management
-	    timer_irq(time_to_sleep());
+	    timer_irq(time_to_sleep()-55);
             ican_send(&msp_ican, CAN_MSG_ID, msg, CAN_PAYLOAD_LEN, 0);
 	    TSC_TIMER_END(timer);
 
@@ -72,12 +70,12 @@ void timer_callback(void)
     /*************************************************/
     /* SET UP NEXT ITERATION */
     /*************************************************/
-        else 
+        
+	else 
         {
 	    // For computational latency measurements
 	    while (i<RUNS)
 	    {
-	        pr_info1("ITT: %u \n", timings[i]);
 	        i++;
             }
 	    
@@ -88,9 +86,14 @@ void timer_callback(void)
 	    i = 0;
 
 	    // Arbitrary delay until start next iteration of transmissions
-            timer_irq(2000);
+            //pr_info1("iteration: %u", iterations);
+	    timer_irq(20000);
 	    TSC_TIMER_START(timer);
         }
+    }
+    else 
+    {
+        pr_info("Done");
     }
 }
 
