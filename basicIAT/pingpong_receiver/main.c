@@ -11,12 +11,12 @@ DECLARE_TSC_TIMER(timer);
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4 /* max 8 */
 #define RUNS		        400
-#define ITERATIONS              100
+#define ITERATIONS              1
 #define MESG_LEN                8
 
 /* IAT CHANNEL VARIABLES */
 uint64_t PERIOD = 10000;
-uint64_t DELTA = 300;
+uint64_t DELTA = 150;
 
 /* BOOKKEEPING VARIABLES */
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
@@ -201,7 +201,7 @@ int main()
                 mess_success = 0;
             }
 	    index = (index+1)%8;
-	    //pr_info2("timing: %u - code: %u", timings[RUNS-i], message[RUNS-i]);
+	    //pr_info2("timing: %u - code: %u\n", timings[RUNS-i], message[RUNS-i]);
 	}
 
 	// bookkeeping

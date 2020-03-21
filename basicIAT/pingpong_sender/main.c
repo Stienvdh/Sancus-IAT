@@ -9,9 +9,9 @@
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
 #define RUNS         		400
-#define DELTA                   300
+#define DELTA                   150
 #define PERIOD                  10000
-#define ITERATIONS              10000
+#define ITERATIONS              1
 
 int counter = RUNS;
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
@@ -57,7 +57,7 @@ void timer_callback(void)
         if (counter > 0) 
         {
 	    // Timer management
-	    timer_irq(time_to_sleep()-55);
+	    timer_irq(time_to_sleep()-54);
             ican_send(&msp_ican, CAN_MSG_ID, msg, CAN_PAYLOAD_LEN, 0);
 	    TSC_TIMER_END(timer);
 
@@ -77,6 +77,7 @@ void timer_callback(void)
 	    while (i<RUNS)
 	    {
 	        i++;
+		//pr_info1("ITT: %u\n", timings[i]);
             }
 	    
 	    // Initialisation next iteration

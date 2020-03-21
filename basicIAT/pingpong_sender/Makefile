@@ -19,7 +19,7 @@ load: $(TARGET)
 
 load_with_noise: $(TARGET)
 	$(SANCUS_LOAD) $(LOADFLAGS) $<
-	canplayer -I ../../../CAN-traffic/20170410-can-data/skoda.dump
+	canplayer -I ../../../CAN-traffic/20170410-can-data/skoda.dump -x -v
 
 sim: $(TARGET)
 	$(SANCUS_SIM) $(SIMFLAGS) $<
