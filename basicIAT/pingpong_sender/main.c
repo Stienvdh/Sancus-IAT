@@ -101,6 +101,8 @@ void timer_callback(void)
 
 int main()
 {
+    uint32_t noise_counter = 0;
+
     /*************************************************/
     /* HARDWARE SETUP */
     /*************************************************/
@@ -124,6 +126,18 @@ int main()
     // Arbitrary delay until start of message transmission
     timer_irq(2000);
     TSC_TIMER_START(timer);
+
+    // Do noise
+    while (iterations < ITERATIONS)
+    {
+        noise_counter = 0;
+	//while (noise_counter < 2000)
+	{
+            //noise_counter++;
+	    //asm("nop");
+    	}
+	ican_send(&msp_ican, 0x40, msg, CAN_PAYLOAD_LEN, 0);
+    } 
 
     while (1);
 }

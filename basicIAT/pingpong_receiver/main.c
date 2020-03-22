@@ -169,7 +169,7 @@ int main()
 	    }
 	    else 
 	    {
-		pr_info("This should not happen!");
+		pr_info1("This should not happen! faulty ID: %u", rec_id);
 	    }
         }
 
@@ -203,6 +203,8 @@ int main()
 	    index = (index+1)%8;
 	    //pr_info2("timing: %u - code: %u\n", timings[RUNS-i], message[RUNS-i]);
 	}
+
+	can_dump_regs(&msp_ican);
 
 	// bookkeeping
 	succesrates[k] = succesrates[k] + success + 1 ;
