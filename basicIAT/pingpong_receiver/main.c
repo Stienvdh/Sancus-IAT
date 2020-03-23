@@ -9,11 +9,11 @@ DECLARE_TSC_TIMER(timer);
 
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4 /* max 8 */
-#define RUNS		        100
-#define ITERATIONS              1000
+#define RUNS		        81
+#define ITERATIONS              2
 #define MESG_LEN                8
 #define PERIOD                  50
-#define DELTA                   10
+#define DELTA                   5
 
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
 volatile int last_time = 	0;
@@ -25,7 +25,7 @@ uint8_t goal_message[8] = { 1, 0, 0, 1, 1, 0, 1, 0 };
 int k = 0;
 
 // FPGA CAN interface
-DECLARE_ICAN(msp_ican, 1, CAN_50_KHZ);
+DECLARE_ICAN(msp_ican, 1, CAN_500_KHZ);
 
 /* ======== UNTRUSTED CONTEXT ======== */
 
@@ -57,6 +57,9 @@ int main()
     int counter = RUNS;
     uint64_t sum = 0;
     uint64_t stdev;
+    uint8_t index;
+    uint16_t mess_success;
+    uint32_t it_count = 0;
 
     /* SETUP */
     msp430_io_init();
@@ -70,7 +73,7 @@ int main()
     // sancus_enable(&iat);
     pr_info("Done");
 
-    while (1)
+    while (it_count < ITERATIONS)
     {    
 	counter = RUNS; 
         TSC_TIMER_START(timer);
@@ -83,7 +86,7 @@ int main()
 	        timings[RUNS-counter] = timer_get_interval();
  	        TSC_TIMER_START(timer);
                 counter--;
-
+		// pr_info("re");
 	        // Do processing here
 	        message[RUNS-counter-1] = decode(timings[RUNS-counter-1]);
 	    }
@@ -92,36 +95,53 @@ int main()
         /* Processing of one iteration */
         i = RUNS;
 	success = 0;
+	mess_success = 0;
+	index = 0;
         while (i>0)
         {
 	    i--;
 	    if (goal_message[(RUNS-i-2)%8] == message[RUNS-i-1])
 	    {
-	        success++;
-	        // pr_info1("%u", message[RUNS-i-1]);
- 	        // pr_info("OK");
+		mess_success++;
+		if (index == 7 && mess_success >= 8)
+		{
+		     success++;
+		     mess_success = 0;
+		}
+	        //pr_info1("%u", message[RUNS-i-1]);
+		//pr_info1("%u", timings[RUNS-i-1]);
+		//pr_info3("goal: %u - real: %u - time: %u ", goal_message[(RUNS-i-2)%8], message[RUNS-i-1], timings[RUNS-i-1]);
+ 	        //pr_info("OK");
 	    }
 	    else 
 	    {
-	        // pr_info1("%u", message[RUNS-i-1]);
-                // pr_info("NOPE");
+		mess_success = 0;
+	        //pr_info1("%u", message[RUNS-i-1]);
+		//pr_info1("%u", timings[RUNS-i-1]);
+		//pr_info1("%u", goal_message[(RUNS-i-2)%8]);
+		//pr_info3("goal: %u - real: %u - time: %u ", goal_message[(RUNS-i-2)%8], message[RUNS-i-1], timings[RUNS-i-1]);
+                //pr_info("NOPE");
             }
+	    index = (index+1)%8;
         }
 
-	succesrates[k] = success;
+	succesrates[k] = succesrates[k] + success;
         k++;
 
-	if (k%100 == 0) 
+	if (k >= ITERATIONS) 
 	{
-	    pr_info1("runs done: %u", k);
+	    it_count++;
+	    //pr_info("itcount");
+	    k = 0;
 	}
 
 	/* Processing of all iterations */
-	if (k >= ITERATIONS) 
+	if (it_count >= ITERATIONS) 
 	{
 	    i = 0;
 	    while (i<ITERATIONS)
 	    {
+		pr_info1("rate: %u", succesrates[i]);
 	        sum = sum + succesrates[i];
 		i++;
 	    }
@@ -142,4 +162,6 @@ int main()
 	    k = 0;
 	}
     }
+
+    while(1);
 }

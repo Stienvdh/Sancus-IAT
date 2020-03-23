@@ -12,10 +12,10 @@ DECLARE_SM(iat, 0x1234);
 
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
-#define RUNS         		100
-#define DELTA                   9
+#define RUNS         		81
+#define DELTA                   5
 #define PERIOD                  50
-#define ITERATIONS              1000
+#define ITERATIONS              4
 
 int counter = RUNS;
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
@@ -26,7 +26,7 @@ int payload_counter = 0;
 int iterations = 0;
 
 // FPGA CAN interface
-DECLARE_ICAN(msp_ican, 1, CAN_50_KHZ);
+DECLARE_ICAN(msp_ican, 1, CAN_500_KHZ);
 DECLARE_TSC_TIMER(timer);
 
 void SM_ENTRY(iat) iat_send()
@@ -90,11 +90,18 @@ void timer_callback(void)
             timer_irq(20000);
         }
     }
+    else
+    {
+	pr_info("DONE");
+    }
 }
 
 
 int main()
 {
+    int i;
+    uint32_t noise_counter;
+
     /* SETUP */
     msp430_io_init();
     timer_init();
