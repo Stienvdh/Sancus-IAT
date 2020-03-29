@@ -8,10 +8,10 @@
 
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
-#define RUNS         		400
+#define RUNS         		80
 #define DELTA                   150
 #define PERIOD                  10000
-#define ITERATIONS              1
+#define ITERATIONS              100
 
 int counter = RUNS;
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
@@ -131,12 +131,12 @@ int main()
     while (iterations < ITERATIONS)
     {
         noise_counter = 0;
-	//while (noise_counter < 2000)
+	while (noise_counter < 20000)
 	{
-            //noise_counter++;
-	    //asm("nop");
+            noise_counter++;
+	    asm("nop");
     	}
-	ican_send(&msp_ican, 0x40, msg, CAN_PAYLOAD_LEN, 0);
+	//ican_send(&msp_ican, 0x40, msg, CAN_PAYLOAD_LEN, 0);
     } 
 
     while (1);

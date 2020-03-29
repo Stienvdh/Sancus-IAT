@@ -5,6 +5,7 @@ OBJECTS         = $(SOURCES:.c=.o)
 
 TARGET          = main.elf
 TARGET_NO_WRAP  = no_wrap_$(TARGET)
+FPGA_DEV = /dev/ttyUSB2
 
 all: $(TARGET)
 

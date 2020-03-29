@@ -10,8 +10,8 @@ DECLARE_TSC_TIMER(timer);
 
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4 /* max 8 */
-#define RUNS		        400
-#define ITERATIONS              1
+#define RUNS		        80
+#define ITERATIONS              10
 #define MESG_LEN                8
 
 /* IAT CHANNEL VARIABLES */
@@ -201,10 +201,8 @@ int main()
                 mess_success = 0;
             }
 	    index = (index+1)%8;
-	    //pr_info2("timing: %u - code: %u\n", timings[RUNS-i], message[RUNS-i]);
+	    //pr_info3("timing: %u - code: %u - wanted: %u\n", timings[RUNS-i], message[RUNS-i], goal_message[(RUNS-i-1)%8]);
 	}
-
-	can_dump_regs(&msp_ican);
 
 	// bookkeeping
 	succesrates[k] = succesrates[k] + success + 1 ;
