@@ -11,12 +11,12 @@ DECLARE_TSC_TIMER(timer);
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4 /* max 8 */
 #define RUNS		        80
-#define ITERATIONS              10
+#define ITERATIONS              100
 #define MESG_LEN                8
 
 /* IAT CHANNEL VARIABLES */
 uint64_t PERIOD = 10000;
-uint64_t DELTA = 150;
+uint64_t DELTA = 300;
 
 /* BOOKKEEPING VARIABLES */
 uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
@@ -33,7 +33,8 @@ uint16_t int_counter = 0;
 uint8_t cum_count = 0;
 
 // FPGA CAN interface
-DECLARE_ICAN(msp_ican, 1, CAN_500_KHZ);
+DECLARE_ICAN(msp_ican, 1, CAN_500_KHZ, ICAN_MASK_RECEIVE_SINGLE,
+		ICAN_MASK_RECEIVE_SINGLE, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04);
 
 uint8_t decode(uint64_t timing)
 {
@@ -234,13 +235,16 @@ int main()
             {
 		pr_info1("rate: %u", succesrates[i]);
                 sum = sum + (succesrates[i]-average)*(succesrates[i]-average);
-                i++;
+                succesrates[i] = 0;
+		i++;
             }
             stdev = (sum*100)/ITERATIONS;
 	    
 	    // Print results to output
 	    pr_info1("average: %u", average);
 	    pr_info1("stdev (*100): %u", stdev);
+	    pr_info("");
+	    pr_info("-------- RUN DONE --------");
 
 	    k = 0;
 	    cum_count = 0;

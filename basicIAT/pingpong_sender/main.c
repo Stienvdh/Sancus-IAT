@@ -9,12 +9,13 @@
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
 #define RUNS         		80
-#define DELTA                   150
+#define DELTA                   300
 #define PERIOD                  10000
-#define ITERATIONS              100
+#define ITERATIONS              10000
 
 int counter = RUNS;
-uint8_t msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34};
+uint8_t msg[4] = {0x12, 0x34, 0x12, 0x34};
+uint8_t noise_msg[CAN_PAYLOAD_LEN] =	{0x12, 0x34, 0x12, 0x34, 0x12, 0x34, 0x12, 0x34};
 volatile int last_time = 	0;
 uint64_t timings[RUNS];
 uint8_t covert_payload[8] = { 1, 0, 0, 1, 1, 0, 1, 0 };
@@ -22,7 +23,8 @@ int payload_counter = 0;
 int iterations = 0;
 
 // FPGA CAN interface
-DECLARE_ICAN(msp_ican, 1, CAN_500_KHZ);
+DECLARE_ICAN(msp_ican, 1, CAN_500_KHZ, ICAN_MASK_RECEIVE_ALL, ICAN_MASK_RECEIVE_ALL, 
+		0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
 DECLARE_TSC_TIMER(timer);
 
 int time_to_sleep()
@@ -131,12 +133,12 @@ int main()
     while (iterations < ITERATIONS)
     {
         noise_counter = 0;
-	while (noise_counter < 20000)
+	while (noise_counter < 600)
 	{
             noise_counter++;
 	    asm("nop");
     	}
-	//ican_send(&msp_ican, 0x40, msg, CAN_PAYLOAD_LEN, 0);
+//	ican_send(&msp_ican, 0x40, noise_msg, 8, 0);
     } 
 
     while (1);
