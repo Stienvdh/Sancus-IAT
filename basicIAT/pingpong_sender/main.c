@@ -9,9 +9,9 @@
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4
 #define RUNS         		80
-#define DELTA                   300
+#define DELTA                   500
 #define PERIOD                  10000
-#define ITERATIONS              10000
+#define ITERATIONS              100
 
 int counter = RUNS;
 uint8_t msg[4] = {0x12, 0x34, 0x12, 0x34};
@@ -138,7 +138,7 @@ int main()
             noise_counter++;
 	    asm("nop");
     	}
-//	ican_send(&msp_ican, 0x40, noise_msg, 8, 0);
+	//ican_send(&msp_ican, 0x40, noise_msg, 8, 0);
     } 
 
     while (1);

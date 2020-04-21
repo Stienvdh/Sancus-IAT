@@ -11,7 +11,7 @@ DECLARE_TSC_TIMER(timer);
 #define CAN_MSG_ID		0x20
 #define CAN_PAYLOAD_LEN      	4 /* max 8 */
 #define RUNS		        80
-#define ITERATIONS              100
+#define ITERATIONS              10
 #define MESG_LEN                8
 
 /* IAT CHANNEL VARIABLES */
@@ -49,23 +49,6 @@ uint8_t decode(uint64_t timing)
     return 2;
 }
 
-void can_callback(void)
-{
-    // Measure + store IAT
-    TSC_TIMER_END(timer);
-    timings[int_counter] = timer_get_interval();
-    TSC_TIMER_START(timer);
-
-    // Decode IAT
-    message[int_counter] = decode(timings[int_counter]);
-    
-    // Adjust message count
-    int_counter = (int_counter+1)%RUNS;
-
-    // Clear interrupt flag on MSP430
-    P1IFG = P1IFG & 0xfc;
-}
-
 int main()
 {
     int overhead;
@@ -98,7 +81,7 @@ int main()
     /* SET UP CAN CONTROLLER */
 
     pr_info("Setting up CAN module...");
-    ican_init(&msp_ican);
+    ican_init(&msp_ican);    
 
     // Enter configuration mode
     data = MCP2515_CANCTRL_REQOP_CONFIGURATION;
@@ -146,6 +129,10 @@ int main()
     P1IES = 0x01;
     P1IFG = 0x00;
     
+    /*************************************************/
+    /* IAT CHANNEL */
+    /*************************************************/
+
     pr_info("Done");
 
     /*************************************************/
@@ -164,9 +151,12 @@ int main()
         while (counter > 0)
         {
 	    ican_recv(&msp_ican, &rec_id, rec_msg, 1);
+	    
 	    if (rec_id == CAN_MSG_ID)
 	    {
 		counter--;
+		int_counter++;
+		message[int_counter] = decode(ican_last_iat());
 	    }
 	    else 
 	    {
@@ -256,5 +246,3 @@ int main()
     {
     }
 }
-
-CAN_ISR_ENTRY(can_callback);
